@@ -1,4 +1,4 @@
-package org.parallaxsecond.greengrass;
+package com.aws.greengrass.security.provider.parsec;
 
 import sun.security.jca.GetInstance;
 

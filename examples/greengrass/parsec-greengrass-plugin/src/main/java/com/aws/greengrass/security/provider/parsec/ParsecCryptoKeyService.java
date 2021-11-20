@@ -1,10 +1,13 @@
-package org.parallaxsecond.greengrass;
+// must be in com.aws.greengrass
+package com.aws.greengrass.security.provider.parsec;
 
 import com.aws.greengrass.config.Topic;
 import com.aws.greengrass.config.Topics;
 import com.aws.greengrass.config.WhatHappened;
+import com.aws.greengrass.dependency.ImplementsService;
 import com.aws.greengrass.dependency.State;
 import com.aws.greengrass.lifecyclemanager.PluginService;
+import com.aws.greengrass.provisioning.DeviceIdentityInterface;
 import com.aws.greengrass.security.CryptoKeySpi;
 import com.aws.greengrass.security.MqttConnectionSpi;
 import com.aws.greengrass.security.SecurityService;
@@ -28,7 +31,8 @@ import java.security.cert.Certificate;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 
-class ParsecCryptoKeyService extends PluginService implements CryptoKeySpi, MqttConnectionSpi {
+@ImplementsService(name = ParsecCryptoKeyService.PARSEC_SERVICE_NAME, autostart = true)
+public class ParsecCryptoKeyService extends PluginService implements CryptoKeySpi, MqttConnectionSpi {
 
   public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
   public static final String NAME_TOPIC = "name";
