@@ -33,7 +33,6 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
     public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
     public static final String PARSEC_SOCKET_TOPIC = "parsecSocket";
-    public static final String PASSWORD = "password";
 
     @Delegate
     private final ParsecCryptoKeysSpi parsecCryptoKeysSpi;
@@ -54,7 +53,6 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
             logger.info("Installing Parsec Crypto service");
             super.install();
             this.config.lookup(CONFIGURATION_CONFIG_KEY, PARSEC_SOCKET_TOPIC).subscribe(this::updateSocket);
-            this.config.lookup(CONFIGURATION_CONFIG_KEY, PASSWORD).subscribe(this::updatePassword);
         } catch (IllegalArgumentException e) {
             throw new RuntimeException(String.format("Failed to install ParsecCryptoKeyService. "
                     + "Make sure that configuration format for %s service is valid.", PARSEC_SERVICE_NAME));
@@ -83,15 +81,6 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
     }
 
     private void updateSocket(WhatHappened what, Topic topic) {
-        if (topic != null && what != WhatHappened.timestampUpdated) {
-            this.parsecCryptoKeysSpi.setParsecSocketPath(Coerce.toString(topic));
-            if (what != WhatHappened.initialized && !parsecCryptoKeysSpi.initializeParsecProvider()) {
-                serviceErrored("Can't initialize Parsec JCA provider when socket update");
-            }
-        }
-    }
-
-    private void updatePassword(WhatHappened what, Topic topic) {
         if (topic != null && what != WhatHappened.timestampUpdated) {
             this.parsecCryptoKeysSpi.setParsecSocketPath(Coerce.toString(topic));
             if (what != WhatHappened.initialized && !parsecCryptoKeysSpi.initializeParsecProvider()) {
