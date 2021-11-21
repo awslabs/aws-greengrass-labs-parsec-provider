@@ -142,12 +142,14 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
   private KeyStore getKeyStore(URI privateKeyUri, URI certificateUri) throws KeyLoadingException {
     ParsecURI keyUri = validatePrivateKeyUri(privateKeyUri);
     validateCertificateUri(certificateUri, keyUri);
-
     String keyLabel = keyUri.getLabel();
     //char[] password = userPin;
     try {
-      KeyStore ks = SingleKeyStore.getInstance(parsecProvider, parsecProvider.getName(), keyLabel); // TODO (guesswork right now)
-      ks.load(null, null); // TODO (guesswork right now)
+
+      KeyStore ks = KeyStore.getInstance("X509", "PARSEC");
+      // FIXME
+
+
       if (!ks.containsAlias(keyLabel)) {
         throw new KeyLoadingException(String.format("Private key or certificate with label %s does not exist. "
             + "Make sure to import both private key and the certificate into PKCS11 device "
@@ -155,7 +157,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
       }
       logger.atDebug().log(String.format("Successfully loaded KeyStore with private key %s", keyLabel));
       return ks;
-    } catch (GeneralSecurityException | IOException e) {
+    } catch (GeneralSecurityException e) {
       throw new KeyLoadingException(
           String.format("Failed to get key store for key %s and certificate %s", privateKeyUri,
               certificateUri), e);

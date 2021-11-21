@@ -12,6 +12,13 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+    <repositories>
+        <repository>
+            <id>greengrass-common</id>
+            <name>greengrass common</name>
+            <url>https://d2jrmugq4soldf.cloudfront.net/snapshots</url>
+        </repository>
+    </repositories>
     <dependencies>
         <dependency>
             <groupId>org.parallaxsecond</groupId>
