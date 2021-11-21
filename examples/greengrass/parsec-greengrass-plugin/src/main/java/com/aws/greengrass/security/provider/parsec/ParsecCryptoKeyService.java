@@ -7,7 +7,6 @@ import com.aws.greengrass.config.WhatHappened;
 import com.aws.greengrass.dependency.ImplementsService;
 import com.aws.greengrass.dependency.State;
 import com.aws.greengrass.lifecyclemanager.PluginService;
-import com.aws.greengrass.provisioning.DeviceIdentityInterface;
 import com.aws.greengrass.security.CryptoKeySpi;
 import com.aws.greengrass.security.MqttConnectionSpi;
 import com.aws.greengrass.security.SecurityService;
@@ -18,7 +17,6 @@ import com.aws.greengrass.security.exceptions.ServiceUnavailableException;
 import com.aws.greengrass.util.Coerce;
 import com.aws.greengrass.util.Utils;
 import org.parallaxsecond.parsec.jce.provider.ParsecProvider;
-import org.parallaxsecond.parsec.jce.provider.ParsecURI;
 import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 
 import javax.inject.Inject;
@@ -59,6 +57,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
   @Override
   protected void install() throws InterruptedException {
     try {
+      logger.info("Installing Parsec Crypto service");
       super.install();
       this.config.lookup(CONFIGURATION_CONFIG_KEY, NAME_TOPIC).subscribe(this::updateName);
       this.config.lookup(CONFIGURATION_CONFIG_KEY, PARSEC_SOCKET_TOPIC).subscribe(this::updateSocket);
@@ -124,6 +123,8 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
   public KeyManager[] getKeyManagers(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, KeyLoadingException {
     checkServiceAvailability();
     try {
+      logger.info(String.format("getKeyManagers with privKey %s and cert %s",
+          privateKeyUri.toString(), certificateUri.toString()));
       KeyStore ks = getKeyStore(privateKeyUri, certificateUri);
 
       KeyManagerFactory keyManagerFactory =
@@ -164,6 +165,8 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
   @Override
   public KeyPair getKeyPair(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, KeyLoadingException {
+    logger.info(String.format("getKeyPair with privKey %s and cert %s",
+        privateKeyUri.toString(), certificateUri.toString()));
     checkServiceAvailability();
 
     ParsecURI keyUri = validatePrivateKeyUri(privateKeyUri);
@@ -190,11 +193,14 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
   @Override
   public AwsIotMqttConnectionBuilder getMqttConnectionBuilder(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, MqttConnectionProviderException {
+    logger.info(String.format("getMqttConnectionBuilder with privKey %s and cert %s",
+        privateKeyUri.toString(), certificateUri.toString()));
     return null;
   }
 
   @Override
   public String supportedKeyType() {
+    logger.info("supportedKeyType called");
     return ParsecURI.PARSEC_SCHEME;
   }
 
