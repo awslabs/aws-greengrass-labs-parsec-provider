@@ -14,20 +14,21 @@ public class ParsecDeviceIdentity implements DeviceIdentityInterface {
 
   protected final Logger logger;
 
-  public ParsecDeviceIdentity(){
+  public ParsecDeviceIdentity() {
     this.logger = LogManager.getLogger(this.getClass()).createChild();
+    logger.info("Parsec Device Identity ");
   }
 
   @Override
   public ProvisionConfiguration updateIdentityConfiguration(ProvisionContext provisionContext)
-      throws RetryableProvisioningException, InterruptedException {
+          throws RetryableProvisioningException, InterruptedException {
     logger.info("Updating Device Identity Configuration via Parsec Provisioning");
     return ProvisionConfiguration.builder()
-        .nucleusConfiguration(ProvisionConfiguration.NucleusConfiguration.builder().build())
-        .systemConfiguration(ProvisionConfiguration.SystemConfiguration.builder()
-            .certificateFilePath("parsec:object=ggeulachtoken;type=cert")
-            .privateKeyPath("parsec:object=ggeulachtoken;type=private")
-            .build()).build();
+            .nucleusConfiguration(ProvisionConfiguration.NucleusConfiguration.builder().build())
+            .systemConfiguration(ProvisionConfiguration.SystemConfiguration.builder()
+                    .certificateFilePath("parsec:object=ggeulachtoken;type=cert")
+                    .privateKeyPath("parsec:object=ggeulachtoken;type=private")
+                    .build()).build();
   }
 
   @Override
