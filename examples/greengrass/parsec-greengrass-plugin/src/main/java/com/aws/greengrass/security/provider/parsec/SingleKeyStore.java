@@ -1,7 +1,5 @@
 package com.aws.greengrass.security.provider.parsec;
 
-import sun.security.jca.GetInstance;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,10 +32,13 @@ class SingleKeyStore extends KeyStore {
     if (provider == null) {
       throw new IllegalArgumentException("Provider can't be null");
     }
+    Provider.Service s = provider.getService("KeyStore", type);
+    KeyStoreSpi keyStoreSpi = new SingleKeyStoreDecorator((KeyStoreSpi) s.newInstance(null), keyLabel);
+    return new SingleKeyStore(keyStoreSpi, provider, type);
 
-    GetInstance.Instance instance = GetInstance.getInstance("KeyStore", KeyStoreSpi.class, type, provider);
-    KeyStoreSpi keyStoreSpi = new SingleKeyStoreDecorator((KeyStoreSpi) instance.impl, keyLabel);
-    return new SingleKeyStore(keyStoreSpi, instance.provider, type);
+    // GetInstance.Instance instance = GetInstance.getInstance("KeyStore", KeyStoreSpi.class, type, provider);
+    // KeyStoreSpi keyStoreSpi = new SingleKeyStoreDecorator((KeyStoreSpi) instance.impl, keyLabel);
+    // return new SingleKeyStore(keyStoreSpi, instance.provider, type);
   }
 
   /**
