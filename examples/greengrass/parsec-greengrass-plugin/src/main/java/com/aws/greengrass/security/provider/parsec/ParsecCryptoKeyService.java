@@ -16,6 +16,7 @@ import com.aws.greengrass.security.exceptions.ServiceProviderConflictException;
 import com.aws.greengrass.security.exceptions.ServiceUnavailableException;
 import com.aws.greengrass.util.Coerce;
 import com.aws.greengrass.util.Utils;
+import lombok.experimental.Delegate;
 import org.parallaxsecond.parsec.jce.provider.ParsecProvider;
 import software.amazon.awssdk.crt.io.TlsContextOptions;
 import software.amazon.awssdk.crt.io.TlsContextPkcs11Options;
@@ -35,7 +36,7 @@ import java.util.Base64;
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 
 @ImplementsService(name = ParsecCryptoKeyService.PARSEC_SERVICE_NAME, autostart = true)
-public class ParsecCryptoKeyService extends PluginService implements CryptoKeySpi, MqttConnectionSpi {
+public class ParsecCryptoKeyService extends PluginService implements ParsecCryptoKeysSpi, MqttConnectionSpi {
 
   public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
   public static final String NAME_TOPIC = "name";
