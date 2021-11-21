@@ -17,15 +17,20 @@ import com.aws.greengrass.security.exceptions.ServiceUnavailableException;
 import com.aws.greengrass.util.Coerce;
 import com.aws.greengrass.util.Utils;
 import org.parallaxsecond.parsec.jce.provider.ParsecProvider;
+import software.amazon.awssdk.crt.io.TlsContextOptions;
+import software.amazon.awssdk.crt.io.TlsContextPkcs11Options;
 import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 
 import javax.inject.Inject;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.security.*;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 
@@ -34,10 +39,13 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
   public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
   public static final String NAME_TOPIC = "name";
-  public static final String PARSEC_SOCKET_TOPIC = "name";
+  public static final String PARSEC_SOCKET_TOPIC = "parsecSocket";
+  public static final String PASSWORD = "password";
 
   private static final String PARSEC_TYPE_PRIVATE = "private";
   private static final String PARSEC_TYPE_CERT = "cert";
+  private static final String BEGIN_CERT = "-----BEGIN CERTIFICATE-----";
+  private static final String END_CERT = "-----END CERTIFICATE-----";
 
   private final SecurityService securityService;
 
@@ -46,6 +54,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
   // Parsec configuration
   private String name;
   private String parsecSocketPath;
+  private String password;
 
   @Inject
   public ParsecCryptoKeyService(Topics topics, SecurityService securityService) {
@@ -61,6 +70,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
       super.install();
       this.config.lookup(CONFIGURATION_CONFIG_KEY, NAME_TOPIC).subscribe(this::updateName);
       this.config.lookup(CONFIGURATION_CONFIG_KEY, PARSEC_SOCKET_TOPIC).subscribe(this::updateSocket);
+      this.config.lookup(CONFIGURATION_CONFIG_KEY, PASSWORD).subscribe(this::updatePassword);
     } catch (IllegalArgumentException e) {
       throw new RuntimeException(String.format("Failed to install ParsecCryptoKeyService. "
           + "Make sure that configuration format for %s service is valid.", PARSEC_SERVICE_NAME));
@@ -123,6 +133,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
   public KeyManager[] getKeyManagers(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, KeyLoadingException {
     checkServiceAvailability();
     try {
+      KeyStore keyStore = PEMImporter.createKeyStore(new File(privateKeyUri), new File(certificateUri), password);
       logger.info(String.format("getKeyManagers with privKey %s and cert %s",
           privateKeyUri.toString(), certificateUri.toString()));
       KeyStore ks = getKeyStore(privateKeyUri, certificateUri);
@@ -131,7 +142,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
       keyManagerFactory.init(ks, null);
       return keyManagerFactory.getKeyManagers();
-    } catch (GeneralSecurityException e) {
+    } catch (GeneralSecurityException | IOException e) {
       String errorMessage = getErrorMessageForRootCause(e,
           String.format("Failed to get key manager for key %s and certificate %s",
               privateKeyUri, certificateUri));
@@ -195,9 +206,22 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
   @Override
   public AwsIotMqttConnectionBuilder getMqttConnectionBuilder(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, MqttConnectionProviderException {
-    logger.info(String.format("getMqttConnectionBuilder with privKey %s and cert %s",
-        privateKeyUri.toString(), certificateUri.toString()));
-    return null;
+    checkServiceAvailability();
+    logger.info(String.format("getMqttConnectionBuilder with privKey %s and cert %s", privateKeyUri.toString(),
+        certificateUri.toString()));
+
+    String keyLabel ;
+    String certLabel;
+    try {
+      ParsecURI keyUri = validatePrivateKeyUri(privateKeyUri);
+      certLabel = validateCertificateUri(certificateUri, keyUri).getLabel();
+      keyLabel = keyUri.getLabel();
+    } catch (KeyLoadingException e) {
+      logger.atError().log(getErrorMessageForRootCause(e, ""));
+      throw new MqttConnectionProviderException(e.getMessage(), e);
+    }
+    // FIXME: AwsIotMqttConnectionBuilder does not support non PKCS11 and non file-path based key Material...
+    return AwsIotMqttConnectionBuilder.newMtlsBuilder(certLabel, keyLabel);
   }
 
   @Override
@@ -265,6 +289,15 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
     }
   }
 
+  private void updatePassword(WhatHappened what, Topic topic) {
+    if (topic != null && what != WhatHappened.timestampUpdated) {
+      this.parsecSocketPath = Coerce.toString(topic);
+      if (what != WhatHappened.initialized && !initializeParsecProvider()) {
+        serviceErrored("Can't initialize Parsec JCA provider when socket update");
+      }
+    }
+  }
+
   private Certificate getCertificateFromKeyStore(KeyStore keyStore, String certLabel)
       throws KeyStoreException, KeyLoadingException {
     Certificate cert = keyStore.getCertificate(certLabel);
@@ -273,6 +306,17 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
           String.format("Unable to load certificate with the label %s", certLabel));
     }
     return cert;
+  }
+
+  private String getX509CertificateContentString(X509Certificate certificate) throws CertificateEncodingException {
+    Base64.Encoder encoder = Base64.getEncoder();
+    StringBuilder sb = new StringBuilder(BEGIN_CERT)
+        .append(System.lineSeparator())
+        .append(encoder.encodeToString(certificate.getEncoded()))
+        .append(System.lineSeparator())
+        .append(END_CERT)
+        .append(System.lineSeparator());
+    return sb.toString();
   }
 
 
