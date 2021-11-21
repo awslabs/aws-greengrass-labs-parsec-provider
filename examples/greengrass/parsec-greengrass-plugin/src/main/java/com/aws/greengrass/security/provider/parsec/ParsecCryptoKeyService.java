@@ -8,18 +8,28 @@ import com.aws.greengrass.dependency.ImplementsService;
 import com.aws.greengrass.dependency.State;
 import com.aws.greengrass.lifecyclemanager.PluginService;
 import com.aws.greengrass.security.CryptoKeySpi;
+import com.aws.greengrass.security.MqttConnectionSpi;
 import com.aws.greengrass.security.SecurityService;
+import com.aws.greengrass.security.exceptions.KeyLoadingException;
+import com.aws.greengrass.security.exceptions.MqttConnectionProviderException;
 import com.aws.greengrass.security.exceptions.ServiceProviderConflictException;
 import com.aws.greengrass.security.exceptions.ServiceUnavailableException;
 import com.aws.greengrass.util.Coerce;
 import lombok.experimental.Delegate;
+import software.amazon.awssdk.crt.io.ClientBootstrap;
+import software.amazon.awssdk.crt.io.EventLoopGroup;
+import software.amazon.awssdk.crt.io.HostResolver;
+import software.amazon.awssdk.crt.io.TlsContextCustomKeyOperationOptions;
+import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 
 import javax.inject.Inject;
+
+import java.net.URI;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 
 @ImplementsService(name = ParsecCryptoKeyService.PARSEC_SERVICE_NAME, autostart = true)
-public class ParsecCryptoKeyService extends PluginService implements CryptoKeySpi/*, MqttConnectionSpi*/ {
+public class ParsecCryptoKeyService extends PluginService implements CryptoKeySpi, MqttConnectionSpi {
 
     public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
     public static final String PARSEC_SOCKET_TOPIC = "parsecSocket";
@@ -90,4 +100,17 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
         }
     }
 
+    @Override
+    public AwsIotMqttConnectionBuilder getMqttConnectionBuilder(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, MqttConnectionProviderException {
+        checkServiceAvailability();
+        try {
+            ParsecKeyOperationHandler myKeyOperationHandler = new ParsecKeyOperationHandler(parsecCryptoKeysSpi.getKeyPair(privateKeyUri, certificateUri).getPrivate(), parsecCryptoKeysSpi.getParsecProvider());
+            TlsContextCustomKeyOperationOptions keyOperationOptions = new TlsContextCustomKeyOperationOptions(myKeyOperationHandler)
+                .withCertificateFilePath(certificateUri.getPath());
+            return AwsIotMqttConnectionBuilder.newMtlsCustomKeyOperationsBuilder(keyOperationOptions);
+        } catch (KeyLoadingException e) {
+            throw new MqttConnectionProviderException(String.format("Failed to load Parsec key %. "
+                + "Make sure that configuration format for %s service is valid.", PARSEC_SERVICE_NAME));
+        }
+    }
 }

@@ -5,6 +5,7 @@ import com.aws.greengrass.logging.impl.LogManager;
 import com.aws.greengrass.security.CryptoKeySpi;
 import com.aws.greengrass.security.exceptions.KeyLoadingException;
 import com.aws.greengrass.security.exceptions.ServiceUnavailableException;
+import lombok.Getter;
 import lombok.Setter;
 import org.parallaxsecond.parsec.client.core.BasicClient;
 import org.parallaxsecond.parsec.jce.provider.ParsecProvider;
@@ -28,7 +29,7 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
     private final Logger logger;
     private final ServiceAvailability checkServiceAvailability;
 
-    @Setter
+    @Setter @Getter
     private ParsecProvider parsecProvider;
     @Setter
     private String parsecSocketPath;
