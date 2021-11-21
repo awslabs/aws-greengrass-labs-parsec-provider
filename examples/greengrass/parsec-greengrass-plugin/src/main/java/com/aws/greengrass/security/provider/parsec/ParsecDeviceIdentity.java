@@ -14,7 +14,7 @@ public class ParsecDeviceIdentity implements DeviceIdentityInterface {
 
   protected final Logger logger;
 
-  public ParsecDeviceIdentity() {
+  public ParsecDeviceIdentity(String disables_this) {
     this.logger = LogManager.getLogger(this.getClass()).createChild();
     logger.info("Parsec Device Identity ");
   }
