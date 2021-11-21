@@ -52,22 +52,7 @@
             <url>https://d2jrmugq4soldf.cloudfront.net/snapshots</url>
         </repository>
     </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>yle-public</id>
-            <name>Yle public repository</name>
-            <url>https://d2x444wtt5plvm.cloudfront.net/release</url>
-            <layout>default</layout>
-        </pluginRepository>
-    </pluginRepositories>
     <build>
-        <extensions>
-            <extension>
-                <groupId>fi.yle.tools</groupId>
-                <artifactId>aws-maven</artifactId>
-                <version>1.4.2</version>
-            </extension>
-        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
