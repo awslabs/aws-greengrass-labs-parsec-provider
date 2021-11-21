@@ -16,14 +16,10 @@ import com.aws.greengrass.security.exceptions.ServiceProviderConflictException;
 import com.aws.greengrass.security.exceptions.ServiceUnavailableException;
 import com.aws.greengrass.util.Coerce;
 import lombok.experimental.Delegate;
-import software.amazon.awssdk.crt.io.ClientBootstrap;
-import software.amazon.awssdk.crt.io.EventLoopGroup;
-import software.amazon.awssdk.crt.io.HostResolver;
 import software.amazon.awssdk.crt.io.TlsContextCustomKeyOperationOptions;
 import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 
 import javax.inject.Inject;
-
 import java.net.URI;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
@@ -66,7 +62,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
     protected void startup() throws InterruptedException {
         try {
             securityService.registerCryptoKeyProvider(this);
-            //securityService.registerMqttConnectionProvider(this);
+            securityService.registerMqttConnectionProvider(this);
         } catch (ServiceProviderConflictException e) {
             serviceErrored(e);
             return;
@@ -98,8 +94,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
                 .withCertificateFilePath(certificateUri.getPath());
             return AwsIotMqttConnectionBuilder.newMtlsCustomKeyOperationsBuilder(keyOperationOptions);
         } catch (KeyLoadingException e) {
-            throw new MqttConnectionProviderException(String.format("Failed to load Parsec key %. "
-                + "Make sure that configuration format for %s service is valid.", PARSEC_SERVICE_NAME));
+            throw new MqttConnectionProviderException("Failed to load Parsec key.", e);
         }
     }
 }

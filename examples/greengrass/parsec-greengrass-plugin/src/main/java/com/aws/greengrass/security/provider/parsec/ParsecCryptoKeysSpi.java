@@ -41,11 +41,10 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
 
     @Override
     public KeyManager[] getKeyManagers(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, KeyLoadingException {
+        logger.info("getKeyManagers in Parsec");
         checkServiceAvailability.check();
         try {
             KeyStore clientCertStore = populateKeystore(privateKeyUri, certificateUri);
-            logger.info(String.format("getKeyManagers with privKey %s and cert %s", privateKeyUri.toString(), certificateUri.toString()));
-
             KeyManagerFactory kmf = KeyManagerFactory.getInstance("X509", parsecProvider);
             kmf.init(
                     new KeyStoreBuilderParameters(
@@ -87,8 +86,9 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
     private KeyStore populateKeystore(URI privateKeyUri, URI certificateUri) throws KeyLoadingException {
         ParsecURI keyUri = ParsecURI.validatePrivateKeyUri(privateKeyUri);
         ParsecURI.validateCertificateUri(certificateUri, keyUri);
-
         String keyLabel = keyUri.getLabel();
+        logger.info("retrieving keystore for  keyLabel: {}", keyLabel);
+
         KeyStore certificateStore = PEMImporter.createKeyStore(new File(certificateUri), keyLabel);
         BasicClient client = parsecProvider.getParsecClientAccessor().get();
 
