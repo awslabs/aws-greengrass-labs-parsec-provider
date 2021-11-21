@@ -1,8 +1,5 @@
 package com.aws.greengrass.security.provider.parsec;
 
-/**
- *
- */
 import java.io.*;
 import java.security.KeyFactory;
 import java.security.KeyStore;
@@ -26,55 +23,18 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 public class PEMImporter {
 
-  public static SSLServerSocketFactory createSSLFactory(File privateKeyPem, File certificatePem, String password) throws Exception {
-    final SSLContext context = SSLContext.getInstance("TLS");
-    final KeyStore keystore = createKeyStore(privateKeyPem, certificatePem, password);
-    final KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-    kmf.init(keystore, password.toCharArray());
-    final KeyManager[] km = kmf.getKeyManagers();
-    context.init(km, null, null);
-    return context.getServerSocketFactory();
+  public static KeyStore createKeyStore(File thingCert, String thingAlias) {
+    try {
+      final KeyStore keystore = KeyStore.getInstance("JKS");
+      keystore.load(null);
+      //keystore.setCertificateEntry("ca", createCertificates(caCert)[0]);
+      keystore.setCertificateEntry(thingAlias, createCertificates(thingCert)[0]);
+      return keystore;
+    } catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
-  /**
-   * Create a KeyStore from standard PEM files
-   *
-   * @param privateKeyPem the private key PEM file
-   * @param certificatePem the certificate(s) PEM file
-   * @param password to set to protect the private key
-   */
-  public static KeyStore createKeyStore(File privateKeyPem, File certificatePem, final String password)
-      throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, InvalidKeySpecException {
-    final X509Certificate[] cert = createCertificates(certificatePem);
-    final KeyStore keystore = KeyStore.getInstance("JKS");
-    keystore.load(null);
-    // Import private key
-    final PrivateKey key = createPrivateKey(privateKeyPem);
-    keystore.setKeyEntry(privateKeyPem.getName(), key, password.toCharArray(), cert);
-    return keystore;
-  }
-
-  private static PrivateKey createPrivateKey(File privateKeyPem) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
-    final BufferedReader r = new BufferedReader(new FileReader(privateKeyPem));
-    String s = r.readLine();
-    if (s == null || !s.contains("BEGIN PRIVATE KEY")) {
-      r.close();
-      throw new IllegalArgumentException("No PRIVATE KEY found");
-    }
-    final StringBuilder b = new StringBuilder();
-    s = "";
-    while (s != null) {
-      if (s.contains("END PRIVATE KEY")) {
-        break;
-      }
-      b.append(s);
-      s = r.readLine();
-    }
-    r.close();
-    final String hexString = b.toString();
-    final byte[] bytes = Base64.getDecoder().decode(hexString);
-    return generatePrivateKeyFromDER(bytes);
-  }
 
   private static X509Certificate[] createCertificates(File certificatePem) throws IOException, CertificateException {
     final List<X509Certificate> result = new ArrayList<X509Certificate>();
@@ -104,11 +64,6 @@ public class PEMImporter {
     return result.toArray(new X509Certificate[result.size()]);
   }
 
-  private static RSAPrivateKey generatePrivateKeyFromDER(byte[] keyBytes) throws InvalidKeySpecException, NoSuchAlgorithmException {
-    final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-    final KeyFactory factory = KeyFactory.getInstance("RSA");
-    return (RSAPrivateKey) factory.generatePrivate(spec);
-  }
 
   private static X509Certificate generateCertificateFromDER(byte[] certBytes) throws CertificateException {
     final CertificateFactory factory = CertificateFactory.getInstance("X.509");
