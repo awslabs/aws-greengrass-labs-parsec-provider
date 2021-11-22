@@ -45,7 +45,7 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
                 .map(Object::toString)
                 .orElseThrow(IllegalStateException::new);
 
-        String keyLabel = thingName + "-" + UUID.randomUUID();
+        String keyLabel = UUID.randomUUID().toString();
         setParsecStore(keyLabel, deviceConfiguration.getPrivateKeyFilePath());
         setParsecStore(keyLabel, deviceConfiguration.getCertificateFilePath());
     }
