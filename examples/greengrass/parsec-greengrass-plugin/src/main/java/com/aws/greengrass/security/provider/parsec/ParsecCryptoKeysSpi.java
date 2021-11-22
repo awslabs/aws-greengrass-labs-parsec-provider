@@ -10,6 +10,8 @@ import com.aws.greengrass.security.exceptions.ServiceUnavailableException;
 import lombok.Getter;
 import lombok.Setter;
 import org.parallaxsecond.parsec.client.core.BasicClient;
+import org.parallaxsecond.parsec.client.exceptions.ClientException;
+import org.parallaxsecond.parsec.client.exceptions.ServiceException;
 import org.parallaxsecond.parsec.jce.provider.ParsecProvider;
 import org.parallaxsecond.parsec.protobuf.psa_key_attributes.PsaKeyAttributes;
 
@@ -20,44 +22,36 @@ import javax.net.ssl.X509KeyManager;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.UUID;
 
 import static com.aws.greengrass.security.provider.parsec.ParsecCipherSuites.RSA_WITH_PKCS1;
 import static java.util.Optional.ofNullable;
 
 public class ParsecCryptoKeysSpi implements CryptoKeySpi {
-    private final Logger logger;
+    private final Logger logger = LogManager.getLogger(this.getClass()).createChild();
 
-    @Setter @Getter
+    @Setter
+    @Getter
     private ParsecProvider parsecProvider;
     @Setter
     private String parsecSocketPath;
 
-    public ParsecCryptoKeysSpi(DeviceConfiguration deviceConfiguration) {
-
-        this.logger = LogManager.getLogger(this.getClass()).createChild();
-
-        String thingName = ofNullable(deviceConfiguration.getThingName().getOnce())
-                .map(Object::toString)
-                .orElseThrow(IllegalStateException::new);
-
+    public void afterRegistration(DeviceConfiguration deviceConfiguration) {
         String keyLabel = UUID.randomUUID().toString();
         setParsecStore(keyLabel, deviceConfiguration.getPrivateKeyFilePath());
         setParsecStore(keyLabel, deviceConfiguration.getCertificateFilePath());
     }
 
     private void setParsecStore(String keyLabel, Topic topic) {
-
         ofNullable(topic.getOnce())
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
-                .filter(s->!ParsecURI.isParsecUri(s))
+                .filter(s -> !ParsecURI.isParsecUri(s))
                 .map(URI::create)
-                .ifPresent(s->topic.withValue(
+                .ifPresent(s -> topic.withValue(
                         new ParsecURI(keyLabel, s.getPath()).toString()));
     }
 
@@ -89,9 +83,9 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
         String keyLabel = keyUri.getLabel();
         KeyManager[] kms = getKeyManagers(privateKeyUri, certificateUri);
 
-        X509KeyManager x509Km =  ((X509KeyManager) kms[0]);
+        X509KeyManager x509Km = ((X509KeyManager) kms[0]);
         X509Certificate certificate = x509Km.getCertificateChain(keyLabel)[0];
-        PrivateKey privateKey =x509Km.getPrivateKey(keyLabel);
+        PrivateKey privateKey = x509Km.getPrivateKey(keyLabel);
         return new KeyPair(certificate.getPublicKey(), privateKey);
     }
 
@@ -100,7 +94,6 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
         logger.info("supportedKeyType called");
         return ParsecURI.PARSEC_SCHEME;
     }
-
 
 
     private KeyStore populateKeystore(URI privateKeyUri, URI certificateUri) throws KeyLoadingException {
@@ -122,11 +115,14 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
 
         try {
 
-            byte[] keyBytes = Files.readAllBytes(Paths.get(keyUri.getImport()));
+            List<byte[]> ders = PEMImporter.pemToDer(new File(keyUri.getImport()));
+            if (ders.size() != 1) {
+                throw new KeyLoadingException("problem converting PEM to DER, file should only contain one PEM key: " + keyUri.getImport());
+            }
             PsaKeyAttributes.KeyAttributes keyAttributes = RSA_WITH_PKCS1.getKeyAttributes();
-            client.psaImportKey(keyLabel, keyBytes, keyAttributes);
+            client.psaImportKey(keyLabel, ders.get(0), keyAttributes);
             return certificateStore;
-        } catch (IOException e) {
+        } catch (ClientException | ServiceException | IOException e) {
             logger.error("exception loading private key", e);
             throw new KeyLoadingException(e.getMessage());
         }

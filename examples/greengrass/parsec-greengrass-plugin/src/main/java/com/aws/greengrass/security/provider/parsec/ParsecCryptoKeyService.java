@@ -40,12 +40,14 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
     @Inject
     public ParsecCryptoKeyService(Topics topics, SecurityService securityService, DeviceConfiguration deviceConfiguration) {
         super(topics);
-        this.parsecCryptoKeysSpi = new ParsecCryptoKeysSpi(deviceConfiguration);
+        this.parsecCryptoKeysSpi = new ParsecCryptoKeysSpi();
         this.config.lookup(CONFIGURATION_CONFIG_KEY, PARSEC_SOCKET_TOPIC).subscribe(this::updateSocket);
         this.securityService = securityService;
+
         try {
             securityService.registerCryptoKeyProvider(this);
             securityService.registerMqttConnectionProvider(this);
+            this.parsecCryptoKeysSpi.afterRegistration(deviceConfiguration);
         } catch (ServiceProviderConflictException e) {
             throw new RuntimeException("Provider parsec already registered");
         }
