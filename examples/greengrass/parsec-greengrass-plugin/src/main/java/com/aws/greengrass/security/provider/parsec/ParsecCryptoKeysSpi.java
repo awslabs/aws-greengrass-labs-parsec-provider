@@ -1,5 +1,7 @@
 package com.aws.greengrass.security.provider.parsec;
 
+import com.aws.greengrass.config.Topic;
+import com.aws.greengrass.deployment.DeviceConfiguration;
 import com.aws.greengrass.logging.api.Logger;
 import com.aws.greengrass.logging.impl.LogManager;
 import com.aws.greengrass.security.CryptoKeySpi;
@@ -22,27 +24,46 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.X509Certificate;
+import java.util.UUID;
 
 import static com.aws.greengrass.security.provider.parsec.ParsecCipherSuites.RSA_WITH_PKCS1;
+import static java.util.Optional.ofNullable;
 
 public class ParsecCryptoKeysSpi implements CryptoKeySpi {
     private final Logger logger;
-    private final ServiceAvailability checkServiceAvailability;
 
     @Setter @Getter
     private ParsecProvider parsecProvider;
     @Setter
     private String parsecSocketPath;
 
-    public ParsecCryptoKeysSpi(ServiceAvailability checkServiceAvailability) {
-        this.checkServiceAvailability = checkServiceAvailability;
-                this.logger = LogManager.getLogger(this.getClass()).createChild();
+    public ParsecCryptoKeysSpi(DeviceConfiguration deviceConfiguration) {
+
+        this.logger = LogManager.getLogger(this.getClass()).createChild();
+
+        String thingName = ofNullable(deviceConfiguration.getThingName().getOnce())
+                .map(Object::toString)
+                .orElseThrow(IllegalStateException::new);
+
+        String keyLabel = thingName + "-" + UUID.randomUUID();
+        setParsecStore(keyLabel, deviceConfiguration.getPrivateKeyFilePath());
+        setParsecStore(keyLabel, deviceConfiguration.getCertificateFilePath());
+    }
+
+    private void setParsecStore(String keyLabel, Topic topic) {
+
+        ofNullable(topic.getOnce())
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .filter(s->!ParsecURI.isParsecUri(s))
+                .map(URI::create)
+                .ifPresent(s->topic.withValue(
+                        new ParsecURI(keyLabel, s.getPath()).toString()));
     }
 
     @Override
     public KeyManager[] getKeyManagers(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, KeyLoadingException {
         logger.info("getKeyManagers in Parsec");
-        checkServiceAvailability.check();
         try {
             KeyStore clientCertStore = populateKeystore(privateKeyUri, certificateUri);
             KeyManagerFactory kmf = KeyManagerFactory.getInstance("X509", parsecProvider);
@@ -63,9 +84,8 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
     public KeyPair getKeyPair(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, KeyLoadingException {
         logger.info(String.format("getKeyPair with privKey %s and cert %s",
                 privateKeyUri.toString(), certificateUri.toString()));
-        checkServiceAvailability.check();
 
-        ParsecURI keyUri = ParsecURI.validatePrivateKeyUri(privateKeyUri);
+        ParsecURI keyUri = ParsecURI.validateParsecURI(privateKeyUri);
         String keyLabel = keyUri.getLabel();
         KeyManager[] kms = getKeyManagers(privateKeyUri, certificateUri);
 
@@ -84,12 +104,12 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
 
 
     private KeyStore populateKeystore(URI privateKeyUri, URI certificateUri) throws KeyLoadingException {
-        ParsecURI keyUri = ParsecURI.validatePrivateKeyUri(privateKeyUri);
-        ParsecURI.validateCertificateUri(certificateUri, keyUri);
+        ParsecURI keyUri = ParsecURI.validateParsecURI(privateKeyUri);
+        ParsecURI pubKeyUri = ParsecURI.validateKeyAndCertUris(certificateUri, keyUri);
         String keyLabel = keyUri.getLabel();
         logger.info("retrieving keystore for  keyLabel: {}", keyLabel);
 
-        KeyStore certificateStore = PEMImporter.createKeyStore(new File(certificateUri), keyLabel);
+        KeyStore certificateStore = PEMImporter.createKeyStore(new File(pubKeyUri.getImport()), keyLabel);
         BasicClient client = parsecProvider.getParsecClientAccessor().get();
 
         boolean keyAlreadyPresent = client.listKeys().getKeys().stream()
@@ -101,7 +121,8 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
         }
 
         try {
-            byte[] keyBytes = Files.readAllBytes(Paths.get(privateKeyUri));
+
+            byte[] keyBytes = Files.readAllBytes(Paths.get(keyUri.getImport()));
             PsaKeyAttributes.KeyAttributes keyAttributes = RSA_WITH_PKCS1.getKeyAttributes();
             client.psaImportKey(keyLabel, keyBytes, keyAttributes);
             return certificateStore;

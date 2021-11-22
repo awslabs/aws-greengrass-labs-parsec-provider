@@ -13,12 +13,10 @@ import java.util.Map;
  * Class to interprete Parsec URI.
  */
 public class ParsecURI {
-  private static final String PARSEC_TYPE_PRIVATE = "private";
-  private static final String PARSEC_TYPE_CERT = "cert";
 
   public static final String PARSEC_SCHEME = "parsec";
+  private static final String IMPORT_KEY = "import";
   private static final String LABEL_KEY = "object";
-  private static final String TYPE_KEY = "type";
 
   private final URI uri;
   private final Map<String, String> attributeMap = new HashMap<>();
@@ -31,6 +29,10 @@ public class ParsecURI {
    */
   public ParsecURI(@NonNull String str) throws URISyntaxException {
     this(new URI(str));
+  }
+
+  public ParsecURI(@NonNull String label, @NonNull String importFile) {
+    this(URI.create(String.format("%s:%s=%s;%s=%s", PARSEC_SCHEME, IMPORT_KEY, importFile, LABEL_KEY, label)));
   }
 
   /**
@@ -55,52 +57,44 @@ public class ParsecURI {
       }
     }
   }
+  public String getImport() {
+    return attributeMap.get(IMPORT_KEY);
+  }
 
   public String getLabel() {
     return attributeMap.get(LABEL_KEY);
   }
 
-  public String getType() {
-    return attributeMap.get(TYPE_KEY);
-  }
 
   @Override
   public String toString() {
     return this.uri.toString();
   }
 
+  public static boolean isParsecUri(String uri) {
+    try {
+      validateParsecURI(URI.create(uri));
+      return true;
+    } catch (KeyLoadingException e) {
+      return false;
+    }
+  }
 
-
-
-  public static ParsecURI validatePrivateKeyUri(URI privateKeyUri) throws KeyLoadingException {
+  public static ParsecURI validateParsecURI(URI key) throws KeyLoadingException {
     ParsecURI keyUri;
     try {
-      keyUri = new ParsecURI(privateKeyUri);
+      keyUri = new ParsecURI(key);
     } catch (IllegalArgumentException e) {
-      throw new KeyLoadingException(String.format("Invalid private key URI: %s", privateKeyUri), e);
+      throw new KeyLoadingException(String.format("Invalid key URI: %s", key), e);
     }
-
     if (Utils.isEmpty(keyUri.getLabel())) {
-      throw new KeyLoadingException("Empty key label in private key URI");
-    }
-    if (!PARSEC_TYPE_PRIVATE.equals(keyUri.getType())) {
-      throw new KeyLoadingException(String.format("Private key must be a Parsec %s type, but was %s",
-              PARSEC_TYPE_PRIVATE, keyUri.getType()));
+      throw new KeyLoadingException("Empty key label in key URI");
     }
     return keyUri;
   }
 
-  public static ParsecURI validateCertificateUri(URI certUri, ParsecURI keyUri) throws KeyLoadingException {
-    ParsecURI certPkcs11Uri;
-    try {
-      certPkcs11Uri = new ParsecURI(certUri);
-    } catch (IllegalArgumentException e) {
-      throw new KeyLoadingException(String.format("Invalid certificate URI: %s", certUri), e);
-    }
-    if (!PARSEC_TYPE_CERT.equals(certPkcs11Uri.getType())) {
-      throw new KeyLoadingException(String.format("Certificate must be a Parsec %s type, but was %s",
-              PARSEC_TYPE_CERT, certPkcs11Uri.getType()));
-    }
+  public static ParsecURI validateKeyAndCertUris(URI certUri, ParsecURI keyUri) throws KeyLoadingException {
+    ParsecURI certPkcs11Uri = validateParsecURI(certUri);
     if (!keyUri.getLabel().equals(certPkcs11Uri.getLabel())) {
       throw new KeyLoadingException("Private key and certificate labels must be the same");
     }

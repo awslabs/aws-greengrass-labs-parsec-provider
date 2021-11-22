@@ -26,7 +26,6 @@ class ParsecURITest {
         String uriStr = "parsec:object=private-key;type=private";
         ParsecURI uri = new ParsecURI(uriStr);
         assertThat(uri.getLabel(), Is.is("private-key"));
-        assertThat(uri.getType(), Is.is("private"));
         assertThat(uri.toString(), Is.is(uriStr));
     }
 
@@ -34,14 +33,12 @@ class ParsecURITest {
     void GIVEN_parsec_key_uri_missing_type_WHEN_create_object_THEN_return_null_type() throws Exception {
         ParsecURI uri = new ParsecURI("parsec:object=private-key");
         assertThat(uri.getLabel(), Is.is("private-key"));
-        assertThat(uri.getType(), IsNull.nullValue());
     }
 
     @Test
     void GIVEN_expected_parsec_cert_uri_WHEN_create_object_THEN_return_proper_attributes() throws Exception {
         ParsecURI uri = new ParsecURI("parsec:object=cert-label;type=cert;id=12345;token=/path/to/lib");
         assertThat(uri.getLabel(), Is.is("cert-label"));
-        assertThat(uri.getType(), Is.is("cert"));
     }
 
     @Test
@@ -72,6 +69,5 @@ class ParsecURITest {
         String uriStr = "parsec:object=private-keytype=private";
         ParsecURI uri = new ParsecURI(uriStr);
         assertThat(uri.getLabel(), Is.is("private-keytype=private"));
-        assertThat(uri.getType(), IsNull.nullValue());
     }
 }
