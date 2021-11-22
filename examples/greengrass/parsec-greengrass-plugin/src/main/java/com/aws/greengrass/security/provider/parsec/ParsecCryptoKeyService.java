@@ -5,7 +5,6 @@ import com.aws.greengrass.config.Topic;
 import com.aws.greengrass.config.Topics;
 import com.aws.greengrass.config.WhatHappened;
 import com.aws.greengrass.dependency.ImplementsService;
-import com.aws.greengrass.dependency.State;
 import com.aws.greengrass.deployment.DeviceConfiguration;
 import com.aws.greengrass.lifecyclemanager.PluginService;
 import com.aws.greengrass.security.CryptoKeySpi;
@@ -21,13 +20,11 @@ import software.amazon.awssdk.crt.io.TlsContextCustomKeyOperationOptions;
 import software.amazon.awssdk.iot.AwsIotMqttConnectionBuilder;
 
 import javax.inject.Inject;
-import javax.net.ssl.KeyManager;
 import java.net.URI;
-import java.security.KeyPair;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 
-@ImplementsService(name = ParsecCryptoKeyService.PARSEC_SERVICE_NAME, autostart = true)
+@ImplementsService(name = ParsecCryptoKeyService.PARSEC_SERVICE_NAME, priority = 0, autostart = true)
 public class ParsecCryptoKeyService extends PluginService implements CryptoKeySpi, MqttConnectionSpi {
 
     public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
@@ -35,14 +32,14 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
     @Delegate
     private final ParsecCryptoKeysSpi parsecCryptoKeysSpi;
-    private final SecurityService securityService;
 
     @Inject
-    public ParsecCryptoKeyService(Topics topics, SecurityService securityService, DeviceConfiguration deviceConfiguration) {
+    public ParsecCryptoKeyService(Topics topics,
+                                  SecurityService securityService,
+                                  DeviceConfiguration deviceConfiguration) {
         super(topics);
         this.parsecCryptoKeysSpi = new ParsecCryptoKeysSpi();
         this.config.lookup(CONFIGURATION_CONFIG_KEY, PARSEC_SOCKET_TOPIC).subscribe(this::updateSocket);
-        this.securityService = securityService;
 
         try {
             securityService.registerCryptoKeyProvider(this);
