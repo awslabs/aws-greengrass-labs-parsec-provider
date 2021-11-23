@@ -65,14 +65,17 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
   @Override
   public AwsIotMqttConnectionBuilder getMqttConnectionBuilder(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, MqttConnectionProviderException {
-    try {
-      /*ParsecURI key = new ParsecURI(privateKeyUri);
-      URI standardKey = new URI(key.getImport());
+
+      /*
+      ParsecURI key = new ParsecURI(privateKeyUri);
+      URI standardKey = URI.create("file://" + key.getImport());
       ParsecURI cert = new ParsecURI(certificateUri);
-      URI standardCert = new URI(cert.getImport());
-      return securityService.getMqttConnectionBuilder(standardKey, standardCert);*/
-      /* FIXME: native code throws segfault
+      URI standardCert = URI.create("file://" + cert.getImport());
+      return securityService.getMqttConnectionBuilder(standardKey, standardCert);
       */
+
+      //FIXME: native code throws segfault
+    try {
       ParsecKeyOperationHandler myKeyOperationHandler = new ParsecKeyOperationHandler(parsecCryptoKeysSpi.getKeyPair(privateKeyUri, certificateUri).getPrivate(), parsecCryptoKeysSpi.getParsecProvider());
       TlsContextCustomKeyOperationOptions keyOperationOptions = new TlsContextCustomKeyOperationOptions(myKeyOperationHandler)
                 .withCertificateFilePath(ParsecURI.validateParsecURI(certificateUri).getImport());
