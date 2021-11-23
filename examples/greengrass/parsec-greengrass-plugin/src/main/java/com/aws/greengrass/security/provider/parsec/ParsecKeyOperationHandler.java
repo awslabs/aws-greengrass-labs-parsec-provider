@@ -39,7 +39,7 @@ public class ParsecKeyOperationHandler implements TlsKeyOperationHandler {
             }
 
             byte[] digest = operation.getInput();
-            Signature rsaSign = Signature.getInstance("NONEwithRSA", provider);
+            Signature rsaSign = Signature.getInstance("SHA256PrecalculatedWithRSA", provider);
             rsaSign.initSign(key);
             rsaSign.update(digest);
             byte[] signatureBytes = rsaSign.sign();
