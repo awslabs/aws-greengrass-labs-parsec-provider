@@ -29,10 +29,12 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
 
   public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
   public static final String PARSEC_SOCKET_TOPIC = "parsecSocket";
+  public static final String PARSEC_NAME_TOPIC = "name";
 
   @Delegate
   private final ParsecCryptoKeysSpi parsecCryptoKeysSpi;
   private final SecurityService securityService;
+  private String name;
 
   @Inject
   public ParsecCryptoKeyService(Topics topics,
@@ -41,6 +43,7 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
     super(topics);
     this.securityService = securityService;
     this.parsecCryptoKeysSpi = new ParsecCryptoKeysSpi();
+    this.config.lookup(CONFIGURATION_CONFIG_KEY, PARSEC_NAME_TOPIC).subscribe(this::updateName);
     this.config.lookup(CONFIGURATION_CONFIG_KEY, PARSEC_SOCKET_TOPIC).subscribe(this::updateSocket);
 
     try {
@@ -62,18 +65,18 @@ public class ParsecCryptoKeyService extends PluginService implements CryptoKeySp
     }
   }
 
+
+  private void updateName(WhatHappened what, Topic topic) {
+    if (topic != null && what != WhatHappened.timestampUpdated) {
+      this.name = Coerce.toString(topic);
+      if (what != WhatHappened.initialized && !parsecCryptoKeysSpi.initializeParsecProvider()) {
+        serviceErrored("Can't initialize Parsec JCA provider when name update");
+      }
+    }
+  }
+
   @Override
   public AwsIotMqttConnectionBuilder getMqttConnectionBuilder(URI privateKeyUri, URI certificateUri) throws ServiceUnavailableException, MqttConnectionProviderException {
-/*
-      
-      ParsecURI key = new ParsecURI(privateKeyUri);
-      URI standardKey = URI.create("file://" + key.getImport());
-      ParsecURI cert = new ParsecURI(certificateUri);
-      URI standardCert = URI.create("file://" + cert.getImport());
-      return securityService.getMqttConnectionBuilder(standardKey, standardCert);
-      
-*/
-      //FIXME: native code throws segfault
     try {
       ParsecKeyOperationHandler myKeyOperationHandler = new ParsecKeyOperationHandler(parsecCryptoKeysSpi.getKeyPair(privateKeyUri, certificateUri).getPrivate(), parsecCryptoKeysSpi.getParsecProvider());
       TlsContextCustomKeyOperationOptions keyOperationOptions = new TlsContextCustomKeyOperationOptions(myKeyOperationHandler)
