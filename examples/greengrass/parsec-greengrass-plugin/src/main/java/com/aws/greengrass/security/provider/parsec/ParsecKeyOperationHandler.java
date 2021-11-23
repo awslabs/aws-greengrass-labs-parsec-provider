@@ -43,7 +43,6 @@ public class ParsecKeyOperationHandler implements TlsKeyOperationHandler {
             rsaSign.initSign(key);
             rsaSign.update(digest);
             byte[] signatureBytes = rsaSign.sign();
-            logger.info("signed value: {} {}", Arrays.toString(signatureBytes), signatureBytes.length);
             operation.complete(signatureBytes);
 
         } catch (Exception ex) {
