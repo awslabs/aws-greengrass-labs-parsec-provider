@@ -27,7 +27,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.UUID;
 
-import static com.aws.greengrass.security.provider.parsec.ParsecCipherSuites.RSA_WITH_PKCS1;
+import static org.parallaxsecond.parsec.jce.provider.ParsecCipherSuites.RSA_WITH_PKCS1;
 import static java.util.Optional.ofNullable;
 
 public class ParsecCryptoKeysSpi implements CryptoKeySpi {
@@ -100,7 +100,7 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
         ParsecURI keyUri = ParsecURI.validateParsecURI(privateKeyUri);
         ParsecURI pubKeyUri = ParsecURI.validateKeyAndCertUris(certificateUri, keyUri);
         String keyLabel = keyUri.getLabel();
-        logger.info("retrieving keystore for  keyLabel: {}", keyLabel);
+        logger.info("retrieving keystore for keyLabel: {}", keyLabel);
 
         KeyStore certificateStore = PEMImporter.createKeyStore(new File(pubKeyUri.getImport()), keyLabel);
         BasicClient client = parsecProvider.getParsecClientAccessor().get();
