@@ -109,18 +109,19 @@ public class ParsecCryptoKeysSpi implements CryptoKeySpi {
                 .anyMatch(ki -> keyLabel.equals(ki.getName()));
 
         if (keyAlreadyPresent) {
-            logger.info("not rewriting key, already present {}", keyLabel);
             return certificateStore;
         }
+        logger.info("importing key {} to Parsec: ", keyLabel);
 
         try {
-
-            List<byte[]> ders = PEMImporter.pemToDer(new File(keyUri.getImport()));
+            File keyFile = new File(keyUri.getImport());
+            List<byte[]> ders = PEMImporter.pemToDer(keyFile);
             if (ders.size() != 1) {
                 throw new KeyLoadingException("problem converting PEM to DER, file should only contain one PEM key: " + keyUri.getImport());
             }
             PsaKeyAttributes.KeyAttributes keyAttributes = RSA_WITH_PKCS1.getKeyAttributes();
             client.psaImportKey(keyLabel, ders.get(0), keyAttributes);
+            keyFile.delete();
             return certificateStore;
         } catch (ClientException | ServiceException | IOException e) {
             logger.error("exception loading private key", e);
