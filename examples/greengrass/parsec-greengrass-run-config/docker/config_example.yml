@@ -1,0 +1,23 @@
+system:
+  certificateFilePath: "parsec:object=gg-parsec-test;type=cert"
+  # the object in the URI is the actual label given the private key
+  privateKeyPath: "parsec:object=gg-parsec-test;type=private"
+  rootCaPath: /home/ggc_user/AmazonRootCA1.pem"
+  rootpath: ""
+  thingName: "${THING_NAME}"
+services:
+  aws.greengrass.Nucleus:
+    componentType: "NUCLEUS"
+    version: "2.5.0"
+    configuration:
+      awsRegion: "eu-central-1"
+      iotRoleAlias: "GreengrassCoreTokenExchangeRoleAlias"
+      iotDataEndpoint: "device-data-prefix-ats.iot.eu-central-1.amazonaws.com"
+      iotCredEndpoint: "device-credentials-prefix.credentials.iot.eu-central-1.amazonaws.com"
+  aws.greengrass.crypto.ParsecProvider:
+    configuration:
+      # requied, but value doesn't matter, labelling the backend of the provider
+      name: parsec
+      # //TODO: create a shared volume for the socket to be shared between Greengrass and Parsec
+      parsecSocketPath:
+      # we can provide more configuration here.

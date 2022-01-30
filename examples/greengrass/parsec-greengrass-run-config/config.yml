@@ -1,0 +1,23 @@
+system:
+  #certificateFilePath: "parsec:object=ggeulachtoken;type=cert"
+  #privateKeyPath: "/private.pem.key"
+  # the object in the URI is the actual label given the private key
+  #privateKeyPath: "parsec:object=ggeulachtoken;type=cert"
+  privateKeyPath: "/privKey.key"
+  certificateFilePath: "/thingCert.crt"
+  rootCaPath: "/AmazonRootCA1.pem"
+  rootpath: ""
+  thingName: "${THING_NAME}"
+services:
+  aws.greengrass.Nucleus:
+    componentType: "NUCLEUS"
+    version: "2.5.0"
+    configuration:
+      awsRegion: "eu-central-1"
+      iotRoleAlias: "GreengrassCoreTokenExchangeRoleAlias"
+      iotDataEndpoint: "device-data-prefix-ats.iot.eu-central-1.amazonaws.com"
+      iotCredEndpoint: "device-credentials-prefix.credentials.iot.eu-central-1.amazonaws.com"
+  aws.greengrass.crypto.ParsecProvider:
+    configuration:
+      name: "ParsecProvider"
+      parsecSocket: "/run/parsec/parsec.sock"
