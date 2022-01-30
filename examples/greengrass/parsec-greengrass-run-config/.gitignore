@@ -1,0 +1,3 @@
+device_root
+secrets.env
+config/effectiveConfig.yaml
