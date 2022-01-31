@@ -1,0 +1,4 @@
+[submodule "parsec-client-java"]
+	path = parsec-client-java
+    url = https://github.com/parallaxsecond/parsec-client-java.git
+    branch = main

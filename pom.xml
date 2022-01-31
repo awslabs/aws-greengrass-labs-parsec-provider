@@ -15,6 +15,7 @@
         <jpms.args></jpms.args>
     </properties>
     <modules>
+        <module>parsec-client-java</module>
         <module>parsec-greengrass-plugin</module>
         <module>parsec-greengrass-plugin-test</module>
     </modules>
