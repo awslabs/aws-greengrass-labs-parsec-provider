@@ -27,6 +27,10 @@ Provider](https://docs.aws.amazon.com/greengrass/v2/developerguide/pkcs11-provid
 component works, except that the Parsec project aims to handle the various interoperability issues
 that are often found when using PKCS#11 libraries on different devices.
 
+<p align="center">
+    <img src="./doc/img/Parsec_AWSGreengrass_56kCloud_ParsecProviderDiagram.png" alt="System diagram"/>
+</p>
+
 # Dependencies
 
 To use this component, you will first need to have the Parsec service and the Parsec command-line
@@ -187,7 +191,7 @@ documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/manual-i
 Follow this step exactly according to the [AWS IoT Greengrass
 documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/manual-installation.html#download-greengrass-core-v2).
 
-## Install the AWS IoT Greengrass Core software
+### Install the AWS IoT Greengrass Core software
 
 Begin by following the steps in the [AWS IoT Greengrass
 documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/manual-installation.html#run-greengrass-core-v2-installer-manual).
