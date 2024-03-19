@@ -68,6 +68,21 @@ execute the `ping` command.
 
 Currently, the Parsec Provider plug-in for AWS IoT Greenrass v2 is only supported on Linux devices.
 
+# Building the component
+## Pre-requisites
+1. Make sure that the docker daemon is running.
+2. Set JAVA_HOME env variable to the JDK installation you want to use.
+
+Steps to build the component artifact jar:
+ 1. Run the following git command to recursively update all the submodules.
+```
+git submodule update --init --recursive
+```
+2. Build the maven project (skip tests)
+```
+mvn clean install -DskipTests
+```
+
 # Installation and Usage
 
 The AWS IoT Greengrass Core software includes an installer that sets up your device as a Greengrass
