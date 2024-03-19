@@ -24,7 +24,7 @@ import java.net.URI;
 
 import static com.aws.greengrass.componentmanager.KernelConfigResolver.CONFIGURATION_CONFIG_KEY;
 
-@ImplementsService(name = ParsecCryptoKeyService.PARSEC_SERVICE_NAME, priority = 0, autostart = true)
+@ImplementsService(name = ParsecCryptoKeyService.PARSEC_SERVICE_NAME,  autostart = true)
 public class ParsecCryptoKeyService extends PluginService implements CryptoKeySpi, MqttConnectionSpi {
 
   public static final String PARSEC_SERVICE_NAME = "aws.greengrass.crypto.ParsecProvider";
