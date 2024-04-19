@@ -33,4 +33,4 @@ jobs:
           version: v0.4.0
       - name: Build with Maven
         run: |
-          mvn -ntp -U clean verify -DskipTests
+          mvn clean install -DskipTests && mvn -pl '!:parsec-jca-java-test' clean install

@@ -17,7 +17,6 @@
     <modules>
         <module>parsec-client-java</module>
         <module>parsec-greengrass-plugin</module>
-        <module>parsec-greengrass-plugin-test</module>
     </modules>
 
     <profiles>
